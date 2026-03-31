@@ -91,19 +91,7 @@ class ScreenshotService(
         private const val FALLBACK_HEIGHT = 1920
         
         // Screenshot compression settings - optimized for API upload
-        private const val WEBP_QUALITY = 65  // Reduced from 70 for better compression
-        
-        /**
-         * Returns the appropriate WebP compress format based on API level.
-         * WEBP_LOSSY is only available on API 30+, use deprecated WEBP for older versions.
-         */
-        @Suppress("DEPRECATION")
-        val WEBP_FORMAT: Bitmap.CompressFormat
-            get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                Bitmap.CompressFormat.WEBP_LOSSY
-            } else {
-                Bitmap.CompressFormat.WEBP
-            }
+        private const val JPEG_QUALITY = 85  // Quality for JPEG compression
         
         // Screenshot scaling settings - use max dimensions instead of fixed scale factor
         // This ensures consistent output size regardless of device resolution
@@ -119,7 +107,7 @@ class ScreenshotService(
      *
      * Uses try-finally pattern to ensure floating window is always restored,
      * even if an exception occurs during capture. The screenshot is scaled
-     * and compressed to WebP format for optimal size.
+     * and compressed to JPEG format for optimal size.
      *
      * @return Screenshot object containing the captured image data and metadata
      *
@@ -163,7 +151,7 @@ class ScreenshotService(
      * Captures the screen using Shizuku shell command.
      *
      * Executes screencap command, scales down the image if needed,
-     * and converts to WebP format for smaller file size.
+     * and converts to JPEG format for smaller file size.
      *
      * @return Screenshot object with captured image data, or fallback screenshot on failure
      *
@@ -202,16 +190,16 @@ class ScreenshotService(
                 Logger.d(TAG, "Scaled from ${originalWidth}x${originalHeight} to ${scaledWidth}x${scaledHeight}")
             }
             
-            // Convert to WebP for better compression
-            val webpStream = ByteArrayOutputStream()
-            bitmap.compress(WEBP_FORMAT, WEBP_QUALITY, webpStream)
+            // Convert to JPEG for better compatibility
+            val jpegStream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, jpegStream)
             bitmap.recycle()
             
-            val webpData = webpStream.toByteArray()
-            val compressionRatio = if (pngData.isNotEmpty()) 100 * webpData.size / pngData.size else 0
-            Logger.d(TAG, "Converted to WebP: ${webpData.size} bytes ($compressionRatio% of PNG)")
+            val jpegData = jpegStream.toByteArray()
+            val compressionRatio = if (pngData.isNotEmpty()) 100 * jpegData.size / pngData.size else 0
+            Logger.d(TAG, "Converted to JPEG: ${jpegData.size} bytes ($compressionRatio% of PNG)")
             
-            val base64Data = encodeToBase64(webpData)
+            val base64Data = encodeToBase64(jpegData)
             Logger.d(TAG, "Screenshot captured: ${scaledWidth}x${scaledHeight}, base64 length: ${base64Data.length}")
             
             Screenshot(
@@ -371,7 +359,7 @@ class ScreenshotService(
     }
     
     /**
-     * Creates a fallback black screenshot in WebP format.
+     * Creates a fallback black screenshot in JPEG format.
      *
      * Used when screenshot capture fails to provide a valid Screenshot object.
      * The fallback is marked as sensitive to indicate capture failure.
@@ -383,7 +371,7 @@ class ScreenshotService(
         val bitmap = Bitmap.createBitmap(FALLBACK_WIDTH, FALLBACK_HEIGHT, Bitmap.Config.ARGB_8888)
         
         val outputStream = ByteArrayOutputStream()
-        bitmap.compress(WEBP_FORMAT, WEBP_QUALITY, outputStream)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, outputStream)
         bitmap.recycle()
         
         val base64Data = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
@@ -438,15 +426,15 @@ class ScreenshotService(
      * Encodes a Bitmap to base64 string.
      *
      * @param bitmap Bitmap to encode
-     * @param format Compression format (default: WEBP_LOSSY)
-     * @param quality Compression quality 0-100 (default: WEBP_QUALITY)
+     * @param format Compression format (default: JPEG)
+     * @param quality Compression quality 0-100 (default: JPEG_QUALITY)
      * @return Base64-encoded string of the compressed image
      *
      */
     fun encodeBitmapToBase64(
         bitmap: Bitmap,
-        format: Bitmap.CompressFormat = WEBP_FORMAT,
-        quality: Int = WEBP_QUALITY
+        format: Bitmap.CompressFormat = Bitmap.CompressFormat.JPEG,
+        quality: Int = JPEG_QUALITY
     ): String {
         val outputStream = ByteArrayOutputStream()
         bitmap.compress(format, quality, outputStream)
