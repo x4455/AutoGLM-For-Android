@@ -91,7 +91,7 @@ class ScreenshotService(
         private const val FALLBACK_HEIGHT = 1920
         
         // Screenshot compression settings - optimized for API upload
-        private const val JPEG_QUALITY = 85  // Quality for JPEG compression
+        private const val JPEG_QUALITY = 65  // Quality for JPEG compression
         
         // Screenshot scaling settings - use max dimensions instead of fixed scale factor
         // This ensures consistent output size regardless of device resolution
